@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -12,21 +13,23 @@
 
 #define SB_INIT_CAPACITY 32
 
+#define SV_Fmt "%.*s"
+#define SV_Arg(sv) (int)(sv).count, (sv).data
 typedef struct {
     const char *data;
-    int count;
+    size_t count;
 } StringView;
 
 typedef struct {
     char *data;
-    int count;
-    int capacity;
+    size_t count;
+    size_t capacity;
 } StringBuilder;
 
 void sb_append(StringBuilder *sb, char c){
     assert(sb->count <= sb->capacity);
     assert((sb->data == NULL) <= (sb->capacity == 0));  // text==NULL --> capacity==0
-    if (sb->count == sb->capacity) {
+    if (sb->count + 1 >= sb->capacity) {    // +1 for null-terminator
         size_t new_capacity = sb->capacity == 0 ? SB_INIT_CAPACITY : sb->capacity * 2;
         sb->data = (char *)realloc(sb->data, new_capacity * sizeof(sb->data[0]));
         if (!sb->data) err(EXIT_FAILURE, "StringBuilder reallocation failed");
@@ -116,17 +119,47 @@ StringView sv_from_sb(const StringBuilder *sb) {
     };
 } 
 
-void sv_chop_right(StringView *sv) {
-    if (sv->count > 0) sv->count--;
+void sv_chop_right(StringView *sv, size_t n) {
+    if (n > sv->count) n = sv->count;
+    sv->count -= n;
 }
 
-void sv_chop_left(StringView *sv) {
-    if (sv->count > 0) {
-        sv->data  += 1;
-        sv->count -= 1;
-    } 
-} 
+void sv_chop_left(StringView *sv, size_t n) {
+    if (n > sv->count) n = sv->count;
+    sv->data  += n;
+    sv->count -= n;
+}
 
+
+StringView sv_chop_by_delim(StringView *sv, char delim) {
+    size_t i = 0;
+    for (; i < sv->count; ++i) {
+        if (sv->data[i] == delim) break;
+    }
+    StringView result = {
+        .data = sv->data,
+        .count = i
+    };
+    sv_chop_left(sv, i + 1);
+    return result;    
+}
+
+void sv_trim_left(StringView *sv) {
+    while (sv->count > 0 && isspace(sv->data[0])) {
+        sv_chop_left(sv, 1);
+    }
+}
+
+void sv_trim_right(StringView *sv) {
+    while (sv->count > 0 && isspace(sv->data[sv->count-1])) {
+        sv_chop_right(sv, 1);
+    }
+}
+
+void sv_trim(StringView *sv) {
+    sv_trim_left(sv);
+    sv_trim_right(sv);
+}
 
 /*
  *  Read the command from stdin
@@ -192,9 +225,10 @@ int yash_main(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
     StringView view = sv("Hello, world");
-    sv_chop_left(&view);
-    sv_chop_right(&view);
-    printf("%.*s\n", view.count, view.data);
+    StringView tok = sv_chop_by_delim(&view, '!');
+    
+    printf(SV_Fmt"\n", SV_Arg(tok));
+    printf(SV_Fmt"\n", SV_Arg(view));
     return EXIT_SUCCESS;
 }
 
