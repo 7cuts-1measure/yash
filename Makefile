@@ -1,7 +1,7 @@
 all: main
 
 CC=gcc
-C_FLAGS="-g"
+C_FLAGS=-g
 TARGET=yash
 SRC_DIR=.
 
