@@ -8,15 +8,15 @@
 
 #define DA_INIT_CAPACITY 32
 
-#define da_append(da, elem) do {                                                            \
+#define da_append(da, elem) do {                                                          \
     assert(da.count <= da.capacity);                                                      \
     assert((da.data == NULL) <= (da.capacity == 0));                                      \
     if (da.count == da.capacity) {                                                        \
         size_t new_capacity = da.capacity == 0 ? DA_INIT_CAPACITY : da.capacity * 2;      \
-        da.data = realloc(da.data, new_capacity * sizeof(da.data[0]));                   \
-        if (!da.data) err(EXIT_FAILURE, "Dynamic array reallocation failed");              \
-        da.capacity = new_capacity;                                                        \
-    }                                                                                       \
+        da.data = realloc(da.data, new_capacity * sizeof(da.data[0]));                    \
+        if (!da.data) err(EXIT_FAILURE, "Dynamic array reallocation failed");             \
+        da.capacity = new_capacity;                                                       \
+    }                                                                                     \
     da.data[da.count++] = elem;                                                           \
 } while (0)
 
